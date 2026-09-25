@@ -1,0 +1,12 @@
+node_modules/
+*.log
+.DS_Store
+.clasp.json
+.clasprc*.json
+.env
+.env.*
+!.env.example
+client_secret*.json
+credentials*.json
+service-account*.json
+src/target.generated.js

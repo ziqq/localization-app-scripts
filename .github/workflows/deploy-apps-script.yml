@@ -1,0 +1,99 @@
+name: Deploy Apps Script
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: apps-script-production
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Validate release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      matrix: ${{ steps.release.outputs.matrix }}
+
+    steps:
+      - name: Check out tagged commit
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Validate production tag
+        shell: bash
+        run: |
+          git fetch origin main
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+
+      - name: Resolve all deployment targets
+        id: release
+        run: node tool/resolve-release.mjs "$GITHUB_REF_NAME" "$GITHUB_OUTPUT"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate repository
+        run: npm run check
+
+  deploy:
+    name: Deploy ${{ matrix.project }} production
+    needs: release
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.release.outputs.matrix) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: ${{ matrix.environment }}
+
+    steps:
+      - name: Check out tagged commit
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure Apps Script target
+        env:
+          APPS_SCRIPT_ID: ${{ secrets.APPS_SCRIPT_ID }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          SPREADSHEET_TITLE: ${{ vars.SPREADSHEET_TITLE }}
+        run: npm run project:configure
+
+      - name: Validate Apps Script files
+        run: npm run status
+
+      - name: Configure clasp credentials
+        shell: bash
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          if [[ -z "$CLASPRC_JSON" ]]; then
+            echo "CLASPRC_JSON environment secret is not configured."
+            exit 1
+          fi
+          CLASP_AUTH_FILE="$RUNNER_TEMP/.clasprc.json"
+          printf '%s' "$CLASPRC_JSON" > "$CLASP_AUTH_FILE"
+          chmod 600 "$CLASP_AUTH_FILE"
+          echo "CLASP_AUTH_FILE=$CLASP_AUTH_FILE" >> "$GITHUB_ENV"
+
+      - name: Push tagged source to Apps Script
+        run: npx clasp --auth "$CLASP_AUTH_FILE" push --force

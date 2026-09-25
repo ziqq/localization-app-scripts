@@ -1,0 +1,35 @@
+{
+  "name": "localization-app-scripts",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Google Apps Script utilities for localization spreadsheets",
+  "homepage": "https://github.com/ziqq/localization-app-scripts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ziqq/localization-app-scripts.git"
+  },
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "check": "npm run format:check && npm run lint && npm test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "login": "clasp login",
+    "open": "clasp open-script",
+    "project:configure": "node tool/write-clasp-config.mjs",
+    "pull": "clasp pull",
+    "status": "clasp show-file-status",
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.35.0",
+    "@google/clasp": "^3.4.0",
+    "eslint": "^9.35.0",
+    "globals": "^16.3.0",
+    "prettier": "^3.6.2"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "projects": [
+    {
+      "slug": "cardhub",
+      "environment": "apps-script-cardhub-production"
+    }
+  ]
+}
