@@ -215,3 +215,130 @@ test("missing required header is rejected", () => {
     /Required header column is missing: "ru"/,
   );
 });
+
+function createRuleBuilder(built) {
+  const rule = {};
+  const builder = {
+    whenFormulaSatisfied(formula) {
+      rule.formula = formula;
+      return builder;
+    },
+    setBackground(color) {
+      rule.background = color;
+      return builder;
+    },
+    setFontColor(color) {
+      rule.fontColor = color;
+      return builder;
+    },
+    setRanges(ranges) {
+      rule.ranges = ranges;
+      return builder;
+    },
+    build() {
+      built.push(rule);
+      return rule;
+    },
+  };
+  return builder;
+}
+
+function createScriptCheckScript() {
+  const built = [];
+  const script = loadAppsScript(
+    ["config.js", "sheets.js", "google-translate.js"],
+    {
+      SpreadsheetApp: {
+        newConditionalFormatRule: () => createRuleBuilder(built),
+      },
+    },
+  );
+  return { built, script };
+}
+
+function createScriptCheckSheet(headers, maxRows = 1076) {
+  return {
+    getLastColumn: () => headers.length,
+    getMaxRows: () => maxRows,
+    getRange(row, column, rows = 1, columns = 1) {
+      if (row === 1 && rows === 1 && columns === headers.length) {
+        return { getDisplayValues: () => [headers] };
+      }
+      return { a1: [row, column, rows, columns] };
+    },
+  };
+}
+
+test("script check formulas compare alphabets and flag Russian-only letters", () => {
+  const { script } = createScriptCheckScript();
+
+  assert.equal(
+    script.buildScriptCheckFormula("en", "E2", ";"),
+    '=LEN(REGEXREPLACE(E2;"[^\\p{Cyrillic}]";""))>LEN(REGEXREPLACE(E2;"[\\p{Cyrillic}\\P{L}]";""))',
+  );
+  assert.equal(
+    script.buildScriptCheckFormula("kk", "F2", ","),
+    '=LEN(REGEXREPLACE(F2,"[^\\p{Latin}]",""))>LEN(REGEXREPLACE(F2,"[^\\p{Cyrillic}]",""))',
+  );
+  assert.equal(
+    script.buildScriptCheckFormula("uk", "I2", ";"),
+    '=OR(LEN(REGEXREPLACE(I2;"[^\\p{Latin}]";""))>LEN(REGEXREPLACE(I2;"[^\\p{Cyrillic}]";""));REGEXMATCH(I2;"[ыэъёЫЭЪЁ]"))',
+  );
+});
+
+test("script check rules group adjacent columns with the same check", () => {
+  const { built, script } = createScriptCheckScript();
+  const sheet = createScriptCheckSheet([
+    "label",
+    "description",
+    "meta",
+    "ru",
+    "en",
+    "kk",
+    "be",
+    "bg",
+    "uk",
+    "fr",
+    "zh_TW",
+    "th",
+  ]);
+
+  script.createScriptCheckRules(sheet, ";");
+
+  assert.deepEqual(
+    built.map((rule) => [
+      rule.formula.match(/\(([A-Z]+)2/)[1],
+      rule.ranges[0].a1,
+    ]),
+    [
+      ["E", [2, 5, 1075, 1]],
+      ["F", [2, 6, 1075, 1]],
+      ["G", [2, 7, 1075, 1]],
+      ["H", [2, 8, 1075, 1]],
+      ["I", [2, 9, 1075, 1]],
+      ["J", [2, 10, 1075, 3]],
+    ],
+  );
+  assert.ok(built.every((rule) => rule.background === "#000000"));
+  assert.ok(built.every((rule) => rule.fontColor === "#ffffff"));
+});
+
+test("formula separator follows the template's custom formulas", () => {
+  const { script } = createScriptCheckScript();
+  const rule = (value) => ({
+    getBooleanCondition: () => ({ getCriteriaValues: () => [value] }),
+  });
+
+  assert.equal(
+    script.getFormulaArgumentSeparator([rule('=AND(A2="",B2="")')]),
+    ",",
+  );
+  assert.equal(
+    script.getFormulaArgumentSeparator([rule('=AND(A2="";B2="")')]),
+    ";",
+  );
+  assert.equal(
+    script.getFormulaArgumentSeparator([{ getBooleanCondition: () => null }]),
+    ",",
+  );
+});

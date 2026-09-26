@@ -7,6 +7,29 @@ const LOCALIZATION_CONFIG = Object.freeze({
   ignoredSheetNames: Object.freeze(["template", "locales"]),
 });
 
+const SCRIPT_CHECK_CONFIG = Object.freeze({
+  cyrillicLanguages: Object.freeze([
+    "ru",
+    "uk",
+    "be",
+    "bg",
+    "kk",
+    "ky",
+    "mk",
+    "mn",
+    "sr",
+    "tg",
+  ]),
+  // Russian letters that do not exist in the language's alphabet.
+  foreignLetters: Object.freeze({
+    uk: "ыэъёЫЭЪЁ",
+    be: "ищъИЩЪ",
+    bg: "ыэёЫЭЁ",
+  }),
+  background: "#000000",
+  fontColor: "#ffffff",
+});
+
 const TRANSLATION_CONFIG = Object.freeze({
   requestDelayMs: 250,
   maxAttempts: 5,

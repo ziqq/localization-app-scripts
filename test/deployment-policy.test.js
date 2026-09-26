@@ -97,14 +97,15 @@ test("public repository tracks no production identifiers or backups", () => {
   }
 });
 
-test("release metadata declares the 0.0.1 release", () => {
+test("release metadata declares the 0.0.2 release", () => {
   const packageJson = JSON.parse(readRepositoryFile("package.json"));
   const packageLock = JSON.parse(readRepositoryFile("package-lock.json"));
   const changelog = readRepositoryFile("CHANGELOG.md");
 
-  assert.equal(packageJson.version, "0.0.1");
-  assert.equal(packageLock.version, "0.0.1");
-  assert.equal(packageLock.packages[""].version, "0.0.1");
+  assert.equal(packageJson.version, "0.0.2");
+  assert.equal(packageLock.version, "0.0.2");
+  assert.equal(packageLock.packages[""].version, "0.0.2");
+  assert.match(changelog, /^## 0\.0\.2 - \d{2}\/\d{2}\/\d{4}$/m);
   assert.match(changelog, /^## 0\.0\.1 - \d{2}\/\d{2}\/\d{4}$/m);
 });
 

@@ -10,6 +10,8 @@ const appsScriptGlobals = {
   UrlFetchApp: "readonly",
   Utilities: "readonly",
   API_DEFAULTS: "readonly",
+  columnToLetter: "readonly",
+  SCRIPT_CHECK_CONFIG: "readonly",
   assertTargetSpreadsheet: "readonly",
   TARGET_SPREADSHEET: "readonly",
   TRANSLATION_CONFIG: "readonly",

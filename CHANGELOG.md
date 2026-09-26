@@ -4,6 +4,12 @@ All notable changes to the localization Apps Script are documented in this file.
 
 ## Unreleased
 
+## 0.0.2 - 26/09/2026
+
+- **ADDED**: Conditional-format sync highlights translations written in a foreign alphabet (black background, white
+  text): mostly Cyrillic text in non-Cyrillic languages, mostly Latin text in Cyrillic languages, and Russian-only letters
+  in `uk`, `be`, and `bg`. The rules are generated from each sheet's header, so they cover every locale column.
+
 ## 0.0.1 - 25/09/2026
 
 - **ADDED**: One global `vX.Y.Z` release deploys the same source version to every project registered in `projects.json`.

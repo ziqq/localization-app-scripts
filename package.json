@@ -1,6 +1,6 @@
 {
   "name": "localization-app-scripts",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "description": "Google Apps Script utilities for localization spreadsheets",
   "homepage": "https://github.com/ziqq/localization-app-scripts",

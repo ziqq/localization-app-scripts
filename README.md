@@ -31,6 +31,7 @@ storage owned by each consuming project.
   pauses between requests and exponential backoff on rate limits;
 - fills, freezes, and clears `GOOGLETRANSLATE` formulas;
 - optionally translates empty cells through a batch HTTP API with retries, dry-run mode, validation, and highlighting;
+- highlights translations written in a foreign alphabet on every locale column during conditional-format sync;
 - keeps the `TRANSLATE_RU_ONLY` custom spreadsheet function;
 - refuses every command when the bound spreadsheet does not match the generated deployment target.
 
@@ -83,7 +84,7 @@ Reload the spreadsheet after a production deployment. The `Локализаци�
 | `Зафиксировать формулы GOOGLETRANSLATE`          | Active sheet            | Replaces `GOOGLETRANSLATE` formulas with their current displayed values. This cannot be undone by the script.                                                |
 | `Удалить формулы GOOGLETRANSLATE`                | Active sheet            | Clears cells that still contain `GOOGLETRANSLATE` formulas; ordinary values are preserved.                                                                   |
 | `Добавить новые локали из template`              | All localization sheets | Adds missing template columns and copies their format and validation. Unrelated sheets are ignored.                                                          |
-| `Синхронизировать условное форматирование`       | All localization sheets | Replaces conditional-format rules with rules mapped from `template`.                                                                                         |
+| `Синхронизировать условное форматирование`       | All localization sheets | Replaces conditional-format rules with foreign-alphabet checks generated from the header plus rules mapped from `template`.                                  |
 | `Синхронизировать всё из template`               | All localization sheets | Runs both column synchronization and conditional-format synchronization.                                                                                     |
 | `Сортировать текущий лист`                       | Active sheet            | Sorts data rows by the configured column and then by `label`; the header is preserved.                                                                       |
 | `Очистить подсветку переводов`                   | Active sheet            | Clears only the background color configured by `HIGHLIGHT_COLOR` and removes the scheduled highlight-clear trigger.                                          |

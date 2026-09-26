@@ -286,6 +286,7 @@ function syncConditionalFormatting() {
   }
 
   const templateRules = template.getConditionalFormatRules();
+  const separator = getFormulaArgumentSeparator(templateRules);
 
   for (const sheet of getTargetSheets(spreadsheet)) {
     ensureSheetSize(sheet, template.getMaxRows(), template.getMaxColumns());
@@ -295,10 +296,96 @@ function syncConditionalFormatting() {
         .map((range) => sheet.getRange(range.getA1Notation()));
       return rule.copy().setRanges(ranges).build();
     });
-    sheet.setConditionalFormatRules(targetRules);
+    sheet.setConditionalFormatRules([
+      ...createScriptCheckRules(sheet, separator),
+      ...targetRules,
+    ]);
   }
 
   showToast("Условное форматирование синхронизировано");
+}
+
+/**
+ * Returns the formula argument separator used by the spreadsheet locale,
+ * inferred from the template's custom-formula rules.
+ */
+function getFormulaArgumentSeparator(rules) {
+  const usesSemicolon = rules.some((rule) => {
+    const condition = rule.getBooleanCondition();
+    if (!condition) return false;
+    return condition
+      .getCriteriaValues()
+      .some((value) => typeof value === "string" && value.includes(";"));
+  });
+  return usesSemicolon ? ";" : ",";
+}
+
+/**
+ * Builds rules that highlight translations written in a foreign alphabet:
+ * mostly Cyrillic text in non-Cyrillic languages, mostly Latin text in
+ * Cyrillic languages, and Russian-only letters where the alphabet lacks them.
+ * Adjacent columns with the same check share one rule.
+ */
+function createScriptCheckRules(sheet, separator) {
+  const header = getSheetHeaders(sheet);
+  const indexes = indexLocalizationHeader(header);
+  const rowCount = sheet.getMaxRows() - LOCALIZATION_CONFIG.headerRow;
+  if (rowCount < 1) return [];
+
+  const groups = [];
+  for (const language of getLocalizationColumns(header, indexes.source)) {
+    const code = language.code.split("_")[0];
+    const check = isPlainNonCyrillic(code) ? "cyrillic" : code;
+    const last = groups[groups.length - 1];
+    if (last && last.check === check && last.end === language.columnIndex - 1) {
+      last.end = language.columnIndex;
+    } else {
+      groups.push({
+        check,
+        code,
+        start: language.columnIndex,
+        end: language.columnIndex,
+      });
+    }
+  }
+
+  return groups.map((group) => {
+    const firstRow = LOCALIZATION_CONFIG.headerRow + 1;
+    const cell = `${columnToLetter(group.start + 1)}${firstRow}`;
+    return SpreadsheetApp.newConditionalFormatRule()
+      .whenFormulaSatisfied(
+        buildScriptCheckFormula(group.code, cell, separator),
+      )
+      .setBackground(SCRIPT_CHECK_CONFIG.background)
+      .setFontColor(SCRIPT_CHECK_CONFIG.fontColor)
+      .setRanges([
+        sheet.getRange(
+          firstRow,
+          group.start + 1,
+          rowCount,
+          group.end - group.start + 1,
+        ),
+      ])
+      .build();
+  });
+}
+
+function isPlainNonCyrillic(code) {
+  return !SCRIPT_CHECK_CONFIG.cyrillicLanguages.includes(code);
+}
+
+function buildScriptCheckFormula(code, cell, separator) {
+  const s = separator;
+  const count = (pattern) => `LEN(REGEXREPLACE(${cell}${s}"${pattern}"${s}""))`;
+
+  if (isPlainNonCyrillic(code)) {
+    return `=${count("[^\\p{Cyrillic}]")}>${count("[\\p{Cyrillic}\\P{L}]")}`;
+  }
+
+  const latinDominates = `${count("[^\\p{Latin}]")}>${count("[^\\p{Cyrillic}]")}`;
+  const letters = SCRIPT_CHECK_CONFIG.foreignLetters[code];
+  if (!letters) return `=${latinDominates}`;
+  return `=OR(${latinDominates}${s}REGEXMATCH(${cell}${s}"[${letters}]"))`;
 }
 
 /** Backward-compatible function name used by the current production menu. */
