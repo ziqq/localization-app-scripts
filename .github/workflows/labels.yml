@@ -8,7 +8,16 @@ on:
       - .github/workflows/labels.yml
   create:
   pull_request_target:
-    types: [opened, reopened, ready_for_review, synchronize, closed, labeled, unlabeled]
+    types:
+      [
+        opened,
+        reopened,
+        ready_for_review,
+        synchronize,
+        closed,
+        labeled,
+        unlabeled,
+      ]
   issues:
     types: [labeled, unlabeled]
   discussion:

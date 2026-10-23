@@ -39,15 +39,36 @@ test("pull requests to main run repository checks without production access", ()
   const workflow = readRepositoryFile(
     ".github/workflows/pull-request-checks.yml",
   );
+  const checkJob = workflow.slice(
+    workflow.indexOf("\n  check:"),
+    workflow.indexOf("\n  notify:"),
+  );
+  const notifyJob = workflow.slice(workflow.indexOf("\n  notify:"));
 
   assert.match(workflow, /pull_request:\s*\n\s*branches:\s*\n\s*- main/);
   assert.match(workflow, /permissions:\s*\n\s*contents: read/);
-  assert.match(workflow, /name: Repository checks/);
-  assert.match(workflow, /run: npm ci/);
-  assert.match(workflow, /run: npm run check/);
+  assert.match(checkJob, /name: Repository checks/);
+  assert.match(checkJob, /run: npm ci/);
+  assert.match(checkJob, /run: npm run check/);
   assert.doesNotMatch(workflow, /pull_request_target/);
-  assert.doesNotMatch(workflow, /secrets\./);
-  assert.doesNotMatch(workflow, /clasp .* push/);
+  assert.doesNotMatch(workflow, /^\s+environment:/m);
+  assert.doesNotMatch(checkJob, /\bsecrets(?:\.|\s*\[)/);
+  assert.doesNotMatch(workflow, /\bclasp\b[^\r\n]*\bpush\b/);
+  assert.match(notifyJob, /name: Notify CI result/);
+  assert.doesNotMatch(notifyJob, /\bsecrets\s*\[/);
+  const notificationSecrets = Array.from(
+    new Set(
+      Array.from(
+        notifyJob.matchAll(/\bsecrets\.([A-Z0-9_]+)/g),
+        (match) => match[1],
+      ),
+    ),
+  ).sort();
+  assert.deepEqual(notificationSecrets, [
+    "DISCORD_WEBHOOKS",
+    "TELEGRAM_BOT_TOKEN",
+    "TELEGRAM_TARGETS",
+  ]);
 });
 
 test("OAuth credentials remain outside Git", () => {
