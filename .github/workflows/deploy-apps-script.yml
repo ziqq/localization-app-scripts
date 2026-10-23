@@ -16,18 +16,20 @@ jobs:
   release:
     name: Validate release
     runs-on: ubuntu-latest
+    environment: release
     timeout-minutes: 10
     outputs:
       matrix: ${{ steps.release.outputs.matrix }}
 
     steps:
       - name: Check out tagged commit
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          persist-credentials: false
           fetch-depth: 0
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 20
           cache: npm
@@ -60,10 +62,12 @@ jobs:
 
     steps:
       - name: Check out tagged commit
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 20
           cache: npm
@@ -98,7 +102,6 @@ jobs:
       - name: Push tagged source to Apps Script
         run: npx clasp --auth "$CLASP_AUTH_FILE" push --force
 
-
   complete-issues:
     name: Complete issues after successful publication
     needs: [release, deploy]
@@ -118,9 +121,9 @@ jobs:
           operation: release-completed
           github-token: ${{ github.token }}
           config-source: api
-          allow-empty: 'true'
-          allow-pattern-removal: 'true'
-          max-targets: '100'
+          allow-empty: "true"
+          allow-pattern-removal: "true"
+          max-targets: "100"
 
   notify:
     name: Notify release or deploy result

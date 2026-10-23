@@ -3,6 +3,19 @@
 This repository uses reusable actions pinned to
 `ziqq/actions@ccd1a799683cd461a45d9303ac6fcb2792f8f5d2`.
 
+## Release approval
+
+The existing `Validate release` job uses the `release` environment. After merge,
+configure its required reviewer and tag-only `v*` deployment policy before the
+next production tag. Every matrix deployment depends on this job and retains
+its project-specific `apps-script-*-production` environment and secrets.
+
+`clasp` continues to use the existing `CLASPRC_JSON` OAuth credentials. Service
+account authentication is marked experimental/not working in the
+[clasp documentation](https://github.com/google/clasp#service-accounts-experimentalnot-working),
+so this workflow change does not introduce OIDC or alter Google access.
+Keep all repository and environment secrets until a separate cleanup is approved.
+
 ## Semantic labels
 
 `.github/labels.json` is the repository-owned source of truth. Automation uses
@@ -76,11 +89,11 @@ The manual test sender remains in `ziqq/actions`; no test dispatch was added her
 
 Configure these Actions secrets in this repository:
 
-| Secret | Value |
-|---|---|
-| `DISCORD_WEBHOOKS` | JSON object such as `{"targets":[{"url":"https://discord.com/api/webhooks/..."}]}` |
-| `TELEGRAM_BOT_TOKEN` | Token issued by BotFather |
-| `TELEGRAM_TARGETS` | JSON object such as `{"targets":[{"chatId":"123456789"}]}` |
+| Secret               | Value                                                                              |
+| -------------------- | ---------------------------------------------------------------------------------- |
+| `DISCORD_WEBHOOKS`   | JSON object such as `{"targets":[{"url":"https://discord.com/api/webhooks/..."}]}` |
+| `TELEGRAM_BOT_TOKEN` | Token issued by BotFather                                                          |
+| `TELEGRAM_TARGETS`   | JSON object such as `{"targets":[{"chatId":"123456789"}]}`                         |
 
 Templates live in `.github/notify/templates/`. Dynamic values are escaped by
 the action. Delivery uses a 10-second per-request timeout and at most five
